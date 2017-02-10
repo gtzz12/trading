@@ -44,8 +44,8 @@ D.columns = ['feature'+str(c) if type(c) is int else 'security' if c=='market' e
              
              
              
-up_thr_in = 0.002
-up_thr_out = 0.001
+up_thr_in = 0.001
+up_thr_out = 0.000
 down_thr_in = -up_thr_in
 down_thr_out = -up_thr_out
 n_period_fwd = 2
@@ -56,6 +56,6 @@ n_sel_feature = 10
 evaluator = Evaluator( 'AdaBoost' )
 evaluator.set_params(up_thr_in, up_thr_out, down_thr_in, down_thr_out, n_period_fwd, train_win_size, train_freq, n_sel_feature)
 evaluator.set_data(data=D)
-evaluator.predict()
+summary = evaluator.predict()
 
              
