@@ -92,66 +92,49 @@ class Evaluator:
 
     def predict_all(self):
         
-        securities = np.unique( self.data.security )
-                
-        start_dt = 
-        for s in securities:
-            Ds  = self.data[self.data.security == s]
-            Ds.sort_index(inplace=True)
-            for i in range(n_train_sample+2, Dm.shape[0]):
-                if （i-n_train_sample-2)%2 == 0:
-                    # train
-                    D_train = Dm[(i-n_train_sample-2):(i-2)]
-                    clf_buy = AdaBoostClassifier(n_estimators =10)
-                    clf_buy = clf_buy.fit(D_train.iloc[:, 0:76], D_train.signal)
-                    clf_sell = AdaBoostClassifier(n_estimators=10()
-                    clf_sell = clf_sell.fit(D_train.iloc[:, 0:76], D_train.signal2)   
-            y_predict = clf_biy                     
-                
-            
-                
+        start_dt   = self.data.index.min() + pd.Timedelta(days=365*2)
                 
         all_dates = self.data.index.unique()
         all_dates.values.sort()
-        start_dt = self.data.index
         start = np.where(all_dates >= start_dt)[0][0]
-        
-        
-        
-        clf = AdaBoostClassifier(n_estimators=20)
-        scores = cross_val_score(clf, D.iloc[:,0:76], D.signal)
-        
-    
-            
-                        
-        
         
         for i in range(start, len(all_dates)):
                
             # train_data
             if (i == start) or (all_dates[i].day < all_dates[i-1].day):  # firt date or first day of month     
-                train_end_dt = all_dates[i-2]
-                train_start_dt = all_dates[i-n_train_sample]
+                train_end_dt = all_dates[i-self.n_period_fwd]
+                train_start_dt = all_dates[i-self.train_win_size]
                 
-                idx_train = (D.index >= train_start_dt) & (D.index <= train_end_dt)
-                
-                clf_buy = AdaBoostClassifier (n_estimators =20)
-                clf_buy = clf_buy.fit(D.iloc[idx_train, 0:76], D.signal[idx_train])
-                
-                clf_sell = AdaBoostClassifier(n_estimators =20)
-                clf_sell = clf_sell.fit(D.iloc[idx_train, 0:76], D.signal2[idx_train])
-                
+                idx_train = (self.data.index >= train_start_dt) & (self.data.index <= train_end_dt)
+                train_data = self.data.loc[idx_train]
+
+                clf_up_in    = self.train_classifier(train_data.loc[:, self.cols_feature], train_data.signal_up_in)
+                clf_up_out   = self.train_classifier(train_data.loc[:, self.cols_feature], train_data.signal_up_out)
+                clf_down_in  = self.train_classifier(train_data.loc[:, self.cols_feature], train_data.signal_down_in)
+                clf_down_out = self.train_classifier(train_data.loc[:, self.cols_feature], train_data.signal_down_out)
             
-            idx_predict = D.index == all_dates[i]
-            y_predict   = clf_buy.predict( D.iloc[idx_predict, 0:76]  )    
-            D.loc[idx_predict, 'sig_predict'] = y_predict    
-        
-            y_predict   = clf_sell.predict( D.iloc[idx_predict, 0:76]  )    
-            D.loc[idx_predict, 'sig_predict2'] = y_predict 
+            idx_predict = self.data.index == all_dates[i]
+            self.data.ix[idx_predict, 'pred_up_in']    = clf_up_in.predict( self.data.ix[idx_predict, self.cols_feature] ) 
+            self.data.ix[idx_predict, 'pred_up_out']   = clf_up_out.predict( self.data.ix[idx_predict, self.cols_feature] ) 
+            self.data.ix[idx_predict, 'pred_down_in']  = clf_down_in.predict( self.data.ix[idx_predict, self.cols_feature] ) 
+            self.data.ix[idx_predict, 'pred_down_out'] = clf_down_out.predict( self.data.ix[idx_predict, self.cols_feature] ) 
             print(all_dates[i])
-            
         
-        
+                
+        for t in range(self.train_win_size+self.n_period_fwd, len(data)):
+            if data.pred_up_in[t]:
+                data.ix[t, 'pred_position'] = 1
+            elif data.pred_down_in[t]:
+                data.ix[t, 'pred_position'] = -1
+            elif data.pred_position[t-1] == 1 and not data.pred_down_out[t]:
+                data.ix[t, 'pred_position'] = 1
+            elif data.pred_position[t-1] == -1 and not data.pred_up_out[t]:
+                data.ix[t, 'pred_position'] = -1
+            else:
+                data.ix[t, 'pred_position'] = 0
+            if (t % 100 == 0):
+                print(data.index[t])        
+                
 
     def predict(self):
         
